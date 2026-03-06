@@ -19,6 +19,13 @@ class RequestOTPView(FormView):
 
         user, created = User.objects.get_or_create(email=email)
 
+        if user.is_staff:
+            messages.error(
+                self.request,
+                "Admins must login via admin panel."
+            )
+            return redirect("request-otp")
+
         otp_code = EmailOTP.generate_otp()
 
         EmailOTP.objects.create(
