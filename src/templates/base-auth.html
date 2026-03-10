@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Expenso</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="{% static 'theme/vendor/fontawesome-free/css/all.min.css' %}" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="{% static 'theme/css/sb-admin-2.min.css' %}" rel="stylesheet">
+    <link href="{% static 'toast.css' %}" rel="stylesheet">
+    <link href="{% static 'custom.css' %}" rel="stylesheet">
+
+</head>
+
+<body class="bg-gradient-primary">
+
+{% block content %}
+{% endblock %}
+
+    <div id="toast-container"></div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="{% static 'theme/vendor/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'theme/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="{% static 'theme/vendor/jquery-easing/jquery.easing.min.js' %}"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="{% static 'theme/js/sb-admin-2.min.js' %}"></script>
+
+    <script>
+        $(document).ready(function(){
+            const $inputs = $('.otp-input');
+            const $hidden = $('#id_otp');
+
+            function updateHiddenField(){
+                let otpVal = '';
+                $inputs.each(function(){
+                    otpVal += $(this).val();
+                });
+                $hidden.val(otpVal);
+            }
+
+            $inputs.on('input', function(){
+                this.value = this.value.replace(/\D/g,''); // digits only
+                if(this.value.length === 1){
+                    $(this).next('.otp-input').focus();
+                }
+                updateHiddenField();
+            });
+
+            $inputs.on('keydown', function(e){
+                if(e.key === "Backspace" && this.value === ""){
+                    $(this).prev('.otp-input').focus();
+                }
+            });
+
+            $inputs.on('paste', function(e){
+                e.preventDefault();
+                let pasteData = (e.originalEvent || e).clipboardData.getData('text');
+                pasteData = pasteData.replace(/\D/g,'').slice(0,6); // digits only, max 6
+                $inputs.each(function(i){
+                    $(this).val(pasteData[i] || '');
+                });
+                updateHiddenField();
+                // focus next empty input
+                $inputs.each(function(){
+                    if(!this.value){
+                        $(this).focus();
+                        return false;
+                    }
+                });
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function(){
+            var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+            var toastList = toastElList.map(function(toastEl) {
+                var option = { delay: 3000 }; // Auto hide after 3 seconds
+                var t = new bootstrap.Toast(toastEl, option)
+                t.show();
+                return t;
+            });
+        });
+    </script>
+    <script>
+        function showToast(message, type="info") {
+            console.log(message, type);
+
+            let icon = "ℹ️";
+
+            if(type==="success") icon="✔️";
+            if(type==="error") icon="❌";
+            if(type==="warning") icon="⚠️";
+
+            let toast = $(`
+                <div class="toast ${type}">
+                    <span class="toast-icon">${icon}</span>
+                    <span>${message}</span>
+                </div>
+            `);
+
+            $("#toast-container").append(toast);
+
+            toast.hide().fadeIn(300);
+
+            setTimeout(function(){
+                toast.fadeOut(400,function(){
+                    $(this).remove();
+                });
+            },4000);
+        }
+    </script>
+
+        {% for message in messages %}
+        <script> showToast("{{ message }}","{{ message.tags }}"); </script>
+
+        {% endfor %}
+
+</body>
+
+</html>

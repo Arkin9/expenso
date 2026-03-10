@@ -1,6 +1,8 @@
 from django.views.generic.edit import FormView
 from django.shortcuts import redirect
 from django.contrib.auth import login
+from django.contrib.auth.views import LogoutView
+from django.urls import reverse_lazy
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
@@ -88,7 +90,7 @@ class VerifyOTPView(FormView):
 
             del self.request.session["otp_user_id"]
 
-            messages.success(self.request, "Login successful 🎉")
+            messages.success(self.request, "Login successful")
 
             return redirect("dashboard")
 
@@ -99,3 +101,10 @@ class VerifyOTPView(FormView):
             messages.error(self.request, "Invalid OTP.")
 
             return redirect("verify-otp")
+
+class UserLogoutView(LogoutView):
+    next_page = reverse_lazy("request-otp")
+
+    def dispatch(self, request, *args, **kwargs):
+        messages.success(request, "You have been logged out succesfully.")
+        return super().dispatch(request, *args, **kwargs)

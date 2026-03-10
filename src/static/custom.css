@@ -1,0 +1,11 @@
+.bg-login-image {
+    background-image: url("/static/images/login-bg.jpeg");
+}
+.otp-input {
+    width: 50px;
+    font-size: 1.5rem;
+}
+
+.auth-btn-user{
+    width: 120px;
+}
