@@ -38,6 +38,15 @@ class ShopForm(forms.ModelForm):
             })
         }
 
+    def clean_name(self):
+        name = self.cleaned_data.get("name")
+        user = self.instance.user
+
+        if Shop.objects.filter(user=user, name__iexact=name).exists():
+            raise forms.ValidationError("You already have a shop with this name.")
+
+        return name
+
 
 class ExpenseForm(forms.ModelForm):
 
