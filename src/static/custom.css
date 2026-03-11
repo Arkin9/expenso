@@ -9,3 +9,8 @@
 .auth-btn-user{
     width: 120px;
 }
+
+.form-small{
+    max-width: 400px;
+    margin: auto;
+}

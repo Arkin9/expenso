@@ -27,6 +27,7 @@
 
 .toast.error {
     border-color: #ef4444;
+    line-height: normal;
 }
 
 .toast.warning {
@@ -39,4 +40,8 @@
 
 .toast-icon {
     font-size: 18px;
+}
+.toast-message {
+    font-size: 14px;
+    overflow: overlay;
 }

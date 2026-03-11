@@ -24,9 +24,9 @@ class RequestOTPView(FormView):
         if user.is_staff:
             messages.error(
                 self.request,
-                "Admins must login via admin panel."
+                "Admin must login via admin panel."
             )
-            return redirect("request-otp")
+            return redirect("accounts:request_otp")
 
         otp_code = EmailOTP.generate_otp()
 
@@ -46,7 +46,7 @@ class RequestOTPView(FormView):
 
         messages.success(self.request, "OTP sent to your email.")
 
-        return redirect("verify-otp")
+        return redirect("accounts:verify_otp")
 
 
 
@@ -56,7 +56,7 @@ class VerifyOTPView(FormView):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.session.get("otp_user_id"):
-            return redirect("request-otp")
+            return redirect("accounts:request_otp")
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -70,17 +70,17 @@ class VerifyOTPView(FormView):
             ).latest("created_at")
         except EmailOTP.DoesNotExist:
             messages.error(self.request, "No OTP found. Please try again.")
-            return redirect("request-otp")
+            return redirect("accounts:request_otp")
 
         # Expiry check (5 min)
         if (timezone.now() - otp_obj.created_at).seconds > 300:
             messages.error(self.request, "OTP expired.")
-            return redirect("request-otp")
+            return redirect("accounts:request_otp")
 
         # Attempt limit
         if otp_obj.attempts >= 5:
             messages.error(self.request, "Too many attempts.")
-            return redirect("request-otp")
+            return redirect("accounts:request_otp")
 
         if otp_obj.otp == otp_input:
             otp_obj.is_verified = True
@@ -100,10 +100,10 @@ class VerifyOTPView(FormView):
 
             messages.error(self.request, "Invalid OTP.")
 
-            return redirect("verify-otp")
+            return redirect("accounts:verify_otp")
 
 class UserLogoutView(LogoutView):
-    next_page = reverse_lazy("request-otp")
+    next_page = reverse_lazy("accounts:request_otp")
 
     def dispatch(self, request, *args, **kwargs):
         messages.success(request, "You have been logged out succesfully.")
