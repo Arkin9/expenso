@@ -4,8 +4,8 @@ from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from expenses.models import Category, Shop
-from expenses.forms import CategoryForm, ShopForm
+from expenses.models import Category, Shop, Expense
+from expenses.forms import CategoryForm, ExpenseForm, ShopForm
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -274,4 +274,141 @@ class ShopDeleteView(LoginRequiredMixin, DeleteView):
         return JsonResponse({
             "success": True,
             "message": f'{name} deleted successfully'
+        })
+
+
+class ExpenseListView(LoginRequiredMixin, ListView):
+    model = Expense
+    template_name = "expenses/expense_list.html"
+    context_object_name = "expense"
+
+    def get_queryset(self):
+        return Expense.objects.filter(user=self.request.user)
+
+class ExpenseListAjaxView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        draw = int(request.GET.get('draw', 1))
+        start = int(request.GET.get('start', 0))
+        length = int(request.GET.get('length', 10))
+        search_value = request.GET.get('search[value]', '')
+
+        qs = Expense.objects.filter(user=request.user)
+
+        # Search filter
+        if search_value:
+            qs = qs.filter(name__icontains=search_value)
+
+        total_records = Expense.objects.filter(user=request.user).count()
+        filtered_records = qs.count()
+
+        # Optional: Sorting
+        order_col_index = int(request.GET.get('order[0][column]', 1))
+        order_dir = request.GET.get('order[0][dir]', 'asc')
+        columns = ['id', 'amount', 'category', 'shop', 'date', 'bill']
+        order_column = columns[order_col_index]
+        if order_dir == 'desc':
+            order_column = '-' + order_column
+        qs = qs.order_by(order_column)
+
+        # Pagination
+        qs = qs[start:start + length]
+
+        data = []
+        for expense in qs:
+            # URLs for update and delete
+            update_url = reverse('expenses:expense_update', args=[expense.id])
+            delete_url = reverse('expenses:expense_delete', args=[expense.id])
+
+            data.append({
+                'amount': f'₹ {expense.amount:,.2f}',
+                'category': expense.category.name,
+                'shop': expense.shop.name if expense.shop else 'N/A',
+                'date': expense.date.strftime('%d-%m-%Y'),
+                'bill': expense.bill.url if expense.bill else None,
+                'action': f'''
+                    <a href="{update_url}" class="btn btn-sm btn-primary" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-danger delete-btn" data-url="{delete_url}" data-name="{expense.amount}" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                '''
+            })
+
+        return JsonResponse({
+            'draw': draw,
+            'recordsTotal': total_records,
+            'recordsFiltered': filtered_records,
+            'data': data
+        })
+
+class ExpenseCreateView(LoginRequiredMixin, CreateView):
+    model = Expense
+    form_class = ExpenseForm
+    template_name = "expenses/expense_form.html"
+    success_url = reverse_lazy("expenses:expense_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f'Expense amount "{form.instance.amount}" added successfully!')
+        return response
+
+    def form_invalid(self, form):
+        form.instance.user = self.request.user
+        return super().form_invalid(form)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.instance.user = self.request.user
+        return form
+
+
+class ExpenseUpdateView(LoginRequiredMixin, UpdateView):
+    model = Expense
+    form_class = ExpenseForm
+    template_name = "expenses/expense_form.html"
+    success_url = reverse_lazy("expenses:expense_list")
+
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f'Expense amount"{form.instance.amount}" updated successfully!')
+        return response
+
+    def form_invalid(self, form):
+        form.instance.user = self.request.user
+        return super().form_invalid(form)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.instance.user = self.request.user
+        return form
+
+
+class ExpenseDeleteView(LoginRequiredMixin, DeleteView):
+    model = Expense
+    def get_queryset(self):
+        return Expense.objects.filter(user=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+
+        self.object = self.get_object()
+        amount = self.object.amount
+        self.object.delete()
+
+        return JsonResponse({
+            "success": True,
+            "message": f'Expense of amount {amount} deleted successfully'
         })

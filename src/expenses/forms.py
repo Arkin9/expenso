@@ -1,4 +1,5 @@
 from django import forms
+from django_select2.forms import ModelSelect2Widget
 from .models import Category, Shop, Expense
 
 
@@ -62,13 +63,23 @@ class ExpenseForm(forms.ModelForm):
         ]
 
         widgets = {
-            "category": forms.Select(attrs={
-                "class": "form-select"
-            }),
+            "category": ModelSelect2Widget(
+                model=Category,
+                search_fields=["name__icontains"],
+                attrs={
+                    "class": "form-control",
+                    "data-placeholder": "Search category",
+                },
+            ),
 
-            "shop": forms.Select(attrs={
-                "class": "form-select"
-            }),
+            "shop": ModelSelect2Widget(
+                model=Shop,
+                search_fields=["name__icontains"],
+                attrs={
+                    "class": "form-control",
+                    "data-placeholder": "Search shop",
+                },
+            ),
 
             "amount": forms.NumberInput(attrs={
                 "class": "form-control",
@@ -87,7 +98,14 @@ class ExpenseForm(forms.ModelForm):
             }),
 
             "bill": forms.ClearableFileInput(attrs={
-                "class": "form-control",
                 "accept": ".jpg,.jpeg,.png,.pdf"
             })
         }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # Get the current user
+        super().__init__(*args, **kwargs)
+
+        if user:
+            self.fields["category"].queryset = Category.objects.filter(user=user)
+            self.fields["shop"].queryset = Shop.objects.filter(user=user)

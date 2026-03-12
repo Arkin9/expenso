@@ -1,6 +1,7 @@
 import os
 import time
 from django.db import models
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
@@ -88,7 +89,7 @@ class Expense(models.Model):
         decimal_places=2
     )
 
-    date = models.DateField()
+    date = models.DateField(default=timezone.now)
 
     description = models.TextField(
         blank=True
@@ -110,5 +111,10 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.amount} - {self.category}"
+
+    def delete(self, *args, **kwargs):
+        if self.bill:
+            self.bill.delete(save=False)
+        super().delete(*args, **kwargs)
 
 
